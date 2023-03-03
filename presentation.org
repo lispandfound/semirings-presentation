@@ -1,0 +1,93 @@
+#+TITLE: Haskell and Semirings
+#+LATEX_HEADER: \usepackage{emoji}
+
+* What is this Presentation About?
+1. The superpowers of /closed semirings/.
+2. Why being /lazy/ is better than being /strict/.
+* Semirings
+A semiring \((S, \cdot, + )\) is a set with two binary operations \(\cdot\) and \(+\) such that:
+1. Addition \(+\) in \(S\) is closed, commutative, and associative, with identity \(0\)
+   - Notice :: No inverses!
+2. Multplication \(\cdot\) in \(S\) is closed and associative with identity \(1\)
+3. Multplication distributes into addition in the usual fashion.
+4. Annilhation: \(0 \cdot x = 0 = x \cdot 0\).
+* Semirings; TLDR
+A semiring is a ring where you might not be able to undo addition.
+* Closed Semirings
+- A /closed semiring/ has a /closure/ operator \(\ast\) satisfying
+  #+begin_equation
+  a^{\ast} = 1 + aa^{\ast}
+  #+end_equation
+- Informally: \(a^\ast = 1 + a + a^2 + a^3 + ...\)
+* Closed Semirings and Linear Equations
+- The closure operator lets us solve the equation \(x = ax + b\).
+  #+BEGIN_equation
+  a(a^{\ast} b) + b = (a^{\ast} a + 1) b = a^{\ast} b.
+  #+END_equation
+* Semirings: Examples
+- The natural numbers (if you include zero) with the usual addition and multiplication.
+- The /tropical/ semiring \emoji{desert-island}.
+  - ...which is the set \(\mathbb{R}\cup\{\infty\}\) with the addition operator \(\mathrm{min}\) and the multiplication operator \(+\).
+  - the identity of \(\mathrm{min}\) is \(\infty\) and the identity of \(+\) is zero.
+- Boolean algebra
+* Haskell
+Haskell is a lazy, pure and functional programming language. This means:
+- Haskell will not evaluate expressions until required.
+- Haskell does not allow side-effects in functions.
+- The core primitive in Haskell is /functional composition/.
+* Laziness
+#+BEGIN_SRC haskell :exports both
+  :{
+  primes :: [Integer]
+  primes = sieve [2..]
+   where sieve (p:ns) =
+           p : sieve (filter (not . (`divisible` p)) ns)
+         m `divisible` n = m `mod` n == 0
+  :}
+
+  take 5 primes
+#+END_SRC
+
+#+RESULTS:
+| 2 | 3 | 5 | 7 | 11 |
+* Haskell Definitions
+#+BEGIN_SRC haskell
+  :{
+  class Semiring r where
+    one :: r
+    zero :: r
+    (+.) :: r -> r -> r
+    infixl 6 +.
+    (*.) :: r -> r -> r
+    infixl 7 *.
+  :}
+#+END_SRC
+
+#+RESULTS:
+: ghci| ghci| ghci| ghci| ghci| ghci| ghci| ghci|
+
+* Haskell Definitions (cont.)
+#+BEGIN_SRC haskell :exports both
+  data ExReal = Infinity | Real Double deriving (Show, Eq)
+  :{
+  instance Semiring ExReal where
+    zero = Infinity
+    one = Real 0
+    (+.) (Real x) (Real y) = Real (min x y)
+    (+.) (Real x) Infinity = Real x
+    (+.) Infinity Infinity = Infinity
+    (+.) x y = y +. x
+    (*.) (Real x) (Real y) = Real (x + y)
+    (*.) _ Infinity = Infinity
+    (*.) x y = y *. x
+  :}
+  Real 2 +. Real 3
+#+END_SRC
+#+RESULTS:
+: Real 2.0
+
+* Closed Semirings
+* Algorithm 1
+* Algorithm 2
+* Algorithm 3
+
