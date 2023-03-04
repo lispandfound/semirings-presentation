@@ -107,7 +107,7 @@ Haskell is programming language that is...
 - In a weighted graph \(G\) we would like to know the shortest distance between any two vertices.
 - Ideally given a graph \(G\), we would output a matrix \(M\) such that \(M_{i, j}\) is the shortest distance between vertex \(i\) and vertex \(j\).
 * Shortest Path Algorithm
-- Let \(M\) be the \(n \times n\) adjacency matrix of \(G\) with \(n\) vertices, where \(M_{i, j} = \infty\) if vertex \(i\) does not share a common edge with vertex \(j\).
+- Let \(M\) be the \(n \times n\) adjacency matrix of \(G\) with \(n\) vertices, where \(M_{i, j} = \infty\) if vertex \(i\) is not adjacent to vertex \(j\).
 - In the tropical semiring: \(M^2_{i, j} = \mathrm{min}_{1 \leq k \leq n} M_{i, k} + M_{j, k}\).
 - \(M^k_{i, j}\) is the shortest length \(k\) path in \(G\) between \(i\) and \(j\) in \(G\).
 * Shortest Path Algorithm
