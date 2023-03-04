@@ -1,9 +1,19 @@
-#+TITLE: Haskell and Semirings
+#+TITLE: Secretly Linear
+#+SUBTITLE: A Surprising Algebraic Connection in the Modern World
+#+AUTHOR: Jake Faulkner
+#+DATE: March 30, 2023
 #+LATEX_HEADER: \usepackage{emoji}
+#+LATEX_HEADER: \usepackage{algpseudocode}
+#+latex_header: \mode<beamer>{\usetheme{Madrid}}
 
+* Abstract                                                         :noexport:
+What do Google Maps, a jewellery thief, and Fibonacci of Pisa have in common? Learn how a humble algebraic structure and an esoteric programming language come together to find routes between restaurants, efficiently steal diamonds, and solve recurrence relations. Along the way, we'll learn how to compute with infinity and redefine our understanding of linearity.
 * What is this Presentation About?
 1. The superpowers of /closed semirings/.
 2. Why being /lazy/ is better than being /strict/.
+
+- This talk follows a paper of Stephen Dolan (2013) /Fun with semirings: a functional pearl on the abuse of linear algebra/, ACM.
+
 * Semirings
 A semiring \((S, \cdot, + )\) is a set with two binary operations \(\cdot\) and \(+\) such that:
 1. Addition \(+\) in \(S\) is closed, commutative, and associative, with identity \(0\)
@@ -13,81 +23,150 @@ A semiring \((S, \cdot, + )\) is a set with two binary operations \(\cdot\) and 
 4. Annilhation: \(0 \cdot x = 0 = x \cdot 0\).
 * Semirings; TLDR
 A semiring is a ring where you might not be able to undo addition.
+* Semirings: Examples
+- Any ring.
+- The natural numbers (if you include zero) with the usual addition and multiplication.
+- The /tropical/ semiring \emoji{desert-island}.
+
+  - ...which is the set \(\mathbb{R}^{+ }\cup\{\infty\}\) with the addition operator \(\mathrm{min}\) and the multiplication operator \(+\).
+  - the identity of \(\mathrm{min}\) is \(\infty\) and the identity of \(+\) is zero.
+- If \(S\) is a semiring, then \(M_n(S)\) is also a semiring.
 * Closed Semirings
 - A /closed semiring/ has a /closure/ operator \(\ast\) satisfying
   #+begin_equation
   a^{\ast} = 1 + aa^{\ast}
   #+end_equation
 - Informally: \(a^\ast = 1 + a + a^2 + a^3 + ...\)
+- In the reals, \(a^\ast = 1 / (1 - a)\).
 * Closed Semirings and Linear Equations
 - The closure operator lets us solve the equation \(x = ax + b\).
   #+BEGIN_equation
   a(a^{\ast} b) + b = (a^{\ast} a + 1) b = a^{\ast} b.
   #+END_equation
-* Semirings: Examples
-- The natural numbers (if you include zero) with the usual addition and multiplication.
-- The /tropical/ semiring \emoji{desert-island}.
-  - ...which is the set \(\mathbb{R}\cup\{\infty\}\) with the addition operator \(\mathrm{min}\) and the multiplication operator \(+\).
-  - the identity of \(\mathrm{min}\) is \(\infty\) and the identity of \(+\) is zero.
-- Boolean algebra
+- It is the fixpoint of the affine map.  
+* Closed Semirings and Linear Equations
+**                                                            :B_theorem:
+:PROPERTIES:
+:BEAMER_env: theorem
+:END:
+Let \(S\) be a closed semiring. Then \(M_n(S)\) is also a closed semiring. 
+* Closed Semirings and Linear Equations
+- The algorithm to compute the closure \(M^{\ast}\) is a recursive.
+- The closure of \(M\) satisfies \(M^\ast = A M^\ast + B\).
 * Haskell
-Haskell is a lazy, pure and functional programming language. This means:
-- Haskell will not evaluate expressions until required.
-- Haskell does not allow side-effects in functions.
-- The core primitive in Haskell is /functional composition/.
+Haskell is programming language that is...
+- *Lazy*. Haskell will not evaluate expressions until required.
+- *Strongly-Typed*. requires all values to have a type.
+- *Functional*. core primitive in Haskell is /functional composition/.
 * Laziness
-#+BEGIN_SRC haskell :exports both
-  :{
+#+BEGIN_SRC haskell
   primes :: [Integer]
   primes = sieve [2..]
    where sieve (p:ns) =
            p : sieve (filter (not . (`divisible` p)) ns)
          m `divisible` n = m `mod` n == 0
-  :}
 
-  take 5 primes
+  take 5 primes -- [2, 3, 5, 7, 11]
 #+END_SRC
-
-#+RESULTS:
-| 2 | 3 | 5 | 7 | 11 |
 * Haskell Definitions
 #+BEGIN_SRC haskell
-  :{
   class Semiring r where
     one :: r
     zero :: r
+    closure :: r -> r
     (+.) :: r -> r -> r
     infixl 6 +.
     (*.) :: r -> r -> r
     infixl 7 *.
-  :}
 #+END_SRC
 
-#+RESULTS:
-: ghci| ghci| ghci| ghci| ghci| ghci| ghci| ghci|
-
 * Haskell Definitions (cont.)
-#+BEGIN_SRC haskell :exports both
+#+BEGIN_SRC haskell
   data ExReal = Infinity | Real Double deriving (Show, Eq)
-  :{
   instance Semiring ExReal where
     zero = Infinity
     one = Real 0
+    closure x = Real 0
     (+.) (Real x) (Real y) = Real (min x y)
     (+.) (Real x) Infinity = Real x
     (+.) Infinity Infinity = Infinity
     (+.) x y = y +. x
+  
     (*.) (Real x) (Real y) = Real (x + y)
     (*.) _ Infinity = Infinity
     (*.) x y = y *. x
-  :}
-  Real 2 +. Real 3
 #+END_SRC
-#+RESULTS:
-: Real 2.0
+* Haskell Definitions (cont.)
+#+BEGIN_SRC haskell
+  data Matrix a = [[a]]
 
-* Closed Semirings
-* Algorithm 1
-* Algorithm 2
-* Algorithm 3
+  instance Semiring r => Semiring (Matrix r) where
+    ...
+#+END_SRC
+* Shortest Paths
+- In a weighted graph \(G\) we would like to know the shortest distance between any two vertices.
+- Ideally given a graph \(G\), we would output a matrix \(M\) such that \(M_{i, j}\) is the shortest distance between vertex \(i\) and vertex \(j\).
+* Shortest Path Algorithm
+- Let \(M\) be the \(n \times n\) adjacency matrix of \(G\) with \(n\) vertices, where \(M_{i, j} = \infty\) if vertex \(i\) does not share a common edge with vertex \(j\).
+- In the tropical semiring: \(M^2_{i, j} = \mathrm{min}_{1 \leq k \leq n} M_{i, k} + M_{j, k}\).
+- \(M^k_{i, j}\) is the shortest length \(k\) path in \(G\) between \(i\) and \(j\) in \(G\).
+* Shortest Path Algorithm
+- The shortest path matrix \(D\) would be then the component-wise minimum of \(M^k\) over all \(k\).
+- Alternatively, you could think of this as the fixpoint of the iterative process \(X \mapsto M X + M\).
+- This is precisely \(M^\ast\)!
+* Some Haskell Code
+#+BEGIN_SRC haskell
+  shortestPath :: Matrix ExReal -> Matrix ExReal
+  shortestPath = closure
+#+END_SRC
+* Formal Semiring Power Series
+- We can map sequences \(\{a_i\}_{i =1}^\infty\) to /formal power series/ \(a_0 + a_1 x + a_2 x^2 + \cdots\).
+- Here \(x\) is an abstract symbol, we cannot evaluate it!
+- Addition is componenent-wise.
+* Formal Semiring Power Series
+- Multiplying \(a_0 + a_1 x + a_2 x^2 + \cdots\) and \(b_0 + b_1 x + b_2 x^2 + \cdots\) gives \(c_0 + c_1 x + c_2 x^2 + \cdots\) where
+  - \(c_i = \sum_{j + k = i} a_j b_k\)
+- Multiplying by \(x\) shifts the sequence along one.
+* Formal Semiring Power Series
+- Given a closed semiring \(S\), the set of formal power series \(S[ [x]]\) form a semiring.
+- The closure of \(a + px\) is \(s^\ast\), where \(s^\ast = a^\ast(1 + p s^\ast)\).
+* Semiring Power Series in Haskell
+#+begin_src haskell
+  instance Semiring s => Semiring [s] where
+    one = [one] 
+    zero = []
+    (+.) x y = zipWith (+.) x y
+    (*.) [] _ = []
+    (*.) _ [] = []
+    (*.) (a:p) (b:q) = ...
+    closure [] = one
+    closure (a:p) = r
+      where r = (closure a) *. (one +. p *. r)
+      --    r =  a*            (1   +  p r)
+  #+end_src
+* Solving Linear Recurrence Relations
+- Formal power series semirings solve every linear recurrence relation.
+- The Fibonacci sequence \(F\) expressed as a power series satsisfies \(F = 1 + (x + x^2) F\).
+- Because \(F\) is a fixed point, its solution is expressed as a closure: \(F = (x + x^2)^\ast\).
+* In Haskell
+#+begin_src haskell
+  --                  0 + x + x^2
+  fibonacci = closure [0, 1, 1]
 
+  take 10 fibonacci -- [1, 1, 2, 3, 5, ...]
+#+end_src
+* Addendum
+Semirings are applied in other ways not listed here:
+- Reachability in a graph
+- DFA to regular expression conversion
+- Dataflow analysis (finding unused variables in code)
+- Most dynamic programming problems (think 0/1 knapsack, edit distance between strings, etc…)
+- Generalising Gaussian eliminitation.
+* Mathematics and Haskell
+Mathematics inspires Haskell:
+- Classic algebraic structures have typeclasses in Haskell.
+  - e.g. Semigroups and Monoids.
+- Category Theory too!
+  - e.g. Functors, Monads, Morphisms.
+- Laziness and purity lets us think of equality in the usual sense.
+  - There are programs that can auto-refactor based on properties from Mathematics. 
