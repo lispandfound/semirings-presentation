@@ -2,62 +2,69 @@
 #+SUBTITLE: A Surprising Algebraic Connection in the Modern World
 #+AUTHOR: Jake Faulkner
 #+DATE: March 30, 2023
-#+LATEX_HEADER: \usepackage{emoji}
 #+LATEX_HEADER: \usepackage{algpseudocode}
+#+LATEX_HEADER: \usepackage{tikz}
 #+latex_header: \mode<beamer>{\usetheme{Madrid}}
 
 * Abstract                                                         :noexport:
 What do Google Maps, a jewellery thief, and Fibonacci of Pisa have in common? Learn how a humble algebraic structure and an esoteric programming language come together to find routes between restaurants, efficiently steal diamonds, and solve recurrence relations. Along the way, we'll learn how to compute with infinity and redefine our understanding of linearity.
 * What is this Presentation About?
-1. The superpowers of /closed semirings/.
-2. Why being /lazy/ is better than being /strict/.
+1. The superpowers of *closed semirings*.
+2. Why being *lazy* is better than being *strict*.
 
 - This talk follows a paper of Stephen Dolan (2013) /Fun with semirings: a functional pearl on the abuse of linear algebra/, ACM.
 
 * Semirings
 A semiring \((S, \cdot, + )\) is a set with two binary operations \(\cdot\) and \(+\) such that:
-1. Addition \(+\) in \(S\) is closed, commutative, and associative, with identity \(0\)
+#+ATTR_BEAMER: :overlay <+->
+1. Addition \(+\) in \(S\) is closed, commutative, and associative, with identity \(0\).
    - Notice :: No inverses!
-2. Multplication \(\cdot\) in \(S\) is closed and associative with identity \(1\)
+2. Multplication \(\cdot\) in \(S\) is closed and associative with identity \(1\).
 3. Multplication distributes into addition in the usual fashion.
-4. Annilhation: \(0 \cdot x = 0 = x \cdot 0\).
+4. Annihilation: \(0 \cdot x = 0 = x \cdot 0\).
 * Semirings; TLDR
-A semiring is a ring where you might not be able to undo addition.
+A semiring is like a ring but *it does not require addition to be invertible*.
 * Semirings: Examples
+#+ATTR_BEAMER: :overlay <+->
 - Any ring.
 - The natural numbers (if you include zero) with the usual addition and multiplication.
-- The /tropical/ semiring \emoji{desert-island}.
+- The *tropical semiring*.
 
   - ...which is the set \(\mathbb{R}^{+ }\cup\{\infty\}\) with the addition operator \(\mathrm{min}\) and the multiplication operator \(+\).
-  - the identity of \(\mathrm{min}\) is \(\infty\) and the identity of \(+\) is zero.
+  - the identity of \(\mathrm{min}\) is \(\infty\) and the identity of \(+\) is zero. 
 - If \(S\) is a semiring, then \(M_n(S)\) is also a semiring.
 * Closed Semirings
-- A /closed semiring/ has a /closure/ operator \(\ast\) satisfying
-  #+begin_equation
-  a^{\ast} = 1 + aa^{\ast}
-  #+end_equation
-- Informally: \(a^\ast = 1 + a + a^2 + a^3 + ...\)
-- In the reals, \(a^\ast = 1 / (1 - a)\).
+#+ATTR_BEAMER: :overlay <+->
+- A *closed semiring* has a *closure operator* \(\ast\) satisfying
+  #+begin_equation*
+  a^{\ast} = 1 + aa^{\ast}.
+  #+end_equation*
+- *Informally:* \(a^\ast = 1 + a + a^2 + a^3 + ...\)
+- In the reals with the usual addition and multiplication we see \(a^\ast = 1 / (1 - a)\) for all \(a \neq 1\).
+- In the tropical semiring the closure is simply \(a^{\ast} = 0\).
 * Closed Semirings and Linear Equations
-- The closure operator lets us solve the equation \(x = ax + b\).
-  #+BEGIN_equation
+#+ATTR_BEAMER: :overlay <+->
+- The closure operator lets us *solve the equation* \(x = ax + b\).
+  #+BEGIN_equation*
   a(a^{\ast} b) + b = (a^{\ast} a + 1) b = a^{\ast} b.
-  #+END_equation
-- It is the fixpoint of the affine map.  
+  #+END_equation*
+- It is the *fixpoint of the affine map* \(x = ax + b\).  
 * Closed Semirings and Linear Equations
-**                                                            :B_theorem:
+** Lehmann, 1977                                                  :B_theorem:
 :PROPERTIES:
 :BEAMER_env: theorem
 :END:
 Let \(S\) be a closed semiring. Then \(M_n(S)\) is also a closed semiring. 
 * Closed Semirings and Linear Equations
-- The algorithm to compute the closure \(M^{\ast}\) is a recursive.
+- The algorithm to compute the closure \(M^{\ast}\) is recursive.
 - The closure of \(M\) satisfies \(M^\ast = A M^\ast + B\).
 * Haskell
 Haskell is programming language that is...
+* Haskell
+#+ATTR_BEAMER: :overlay <+->
 - *Lazy*. Haskell will not evaluate expressions until required.
-- *Strongly-Typed*. requires all values to have a type.
-- *Functional*. core primitive in Haskell is /functional composition/.
+- *Strongly-Typed*. Haskell requires all values to have a type.
+- *Functional*. The core primitive in Haskell is /functional composition/.
 * Laziness
 #+BEGIN_SRC haskell
   primes :: [Integer]
@@ -104,30 +111,72 @@ Haskell is programming language that is...
     ...
 #+END_SRC
 * Shortest Paths
-- In a weighted graph \(G\) we would like to know the shortest distance between any two vertices.
+#+ATTR_BEAMER: :overlay <+->
+- In a weighted graph \(G\) we would like to know the *shortest distance between any two vertices*.
 - Ideally given a graph \(G\), we would output a matrix \(M\) such that \(M_{i, j}\) is the shortest distance between vertex \(i\) and vertex \(j\).
 * Shortest Path Algorithm
+#+ATTR_BEAMER: :overlay <+->
 - Let \(M\) be the \(n \times n\) adjacency matrix of \(G\) with \(n\) vertices, where \(M_{i, j} = \infty\) if vertex \(i\) is not adjacent to vertex \(j\).
 - In the tropical semiring: \(M^2_{i, j} = \mathrm{min}_{1 \leq k \leq n} M_{i, k} + M_{j, k}\).
-- \(M^k_{i, j}\) is the shortest length \(k\) path in \(G\) between \(i\) and \(j\) in \(G\).
+- \(M^k_{i, j}\) is the shortest length \(\leq k\) path between \(i\) and \(j\) in \(G\).
 * Shortest Path Algorithm
-- The shortest path matrix \(D\) would be then the component-wise minimum of \(M^k\) over all \(k\).
-- Alternatively, you could think of this as the fixpoint of the iterative process \(X \mapsto M X + M\).
+#+ATTR_BEAMER: :overlay <+->
+- The shortest path matrix \(D\) would be then the limit of \(M^k\) as \(k \to \infty\).
+- Alternatively, you could think of this as the fixpoint of the iterative process \(X \mapsto MX = M X + M\).
 - This is precisely \(M^\ast\)!
+* Example
+** Graph                                              :B_ignoreheading:BMCOL:
+:PROPERTIES:
+:BEAMER_col: 0.5
+:END:
+\begin{tikzpicture}[every node/.style={circle, draw, minimum size=6mm}, scale=0.8]
+    \node (0) at (0,0) {0};
+    \node (1) at (3.5,2) {1};
+    \node (2) at (2,-2) {2};
+    \node (3) at (5,-2) {3};
+    \node (4) at (7,0) {4};
+    
+    \foreach \i/\j/\c in {0/1/4, 1/4/5, 0/2/1, 2/3/5, 3/4/1, 0/4/10, 2/3/5}
+        \draw (\i) -- node[above,sloped,draw=none]{$\c$} (\j);
+\end{tikzpicture}
+
+** Algorithm Trace                                    :B_ignoreheading:BMCOL:
+:PROPERTIES:
+:BEAMER_col: 0.5
+:END:
+\begin{align*}
+M &= \begin{bmatrix}
+0 & 4 & 1 & \infty & 10 \\
+4 & 0 & \infty & \infty & 5 \\
+1 & \infty & 0 & 5 & \infty \\
+\infty & \infty & 5 & 0 & 1 \\
+10 & 5 & \infty & 1 & 0
+\end{bmatrix} \\
+M^2 &= \begin{bmatrix}
+0 & 4 & 1 & 6 & 9 \\
+4 & 0 & 5 & 6 & 5 \\
+1 & 5 & 0 & 5 & 6 \\
+6 & 6 & 5 & 0 & 1 \\
+9 & 5 & 6 & 1 & 0
+\end{bmatrix}
+\end{align*}
 * Some Haskell Code
 #+BEGIN_SRC haskell
   shortestPath :: Matrix ExReal -> Matrix ExReal
   shortestPath = closure
 #+END_SRC
 * Formal Semiring Power Series
+#+ATTR_BEAMER: :overlay <+->
 - We can map sequences \(\{a_i\}_{i =1}^\infty\) to /formal power series/ \(a_0 + a_1 x + a_2 x^2 + \cdots\).
 - Here \(x\) is an abstract symbol, we cannot evaluate it!
-- Addition is componenent-wise.
+- Addition is component-wise.
 * Formal Semiring Power Series
+#+ATTR_BEAMER: :overlay <+->
 - Multiplying \(a_0 + a_1 x + a_2 x^2 + \cdots\) and \(b_0 + b_1 x + b_2 x^2 + \cdots\) gives \(c_0 + c_1 x + c_2 x^2 + \cdots\) where
-  - \(c_i = \sum_{j + k = i} a_j b_k\)
+  - \(c_i = \sum_{j + k = i} a_j b_k\).
 - Multiplying by \(x\) shifts the sequence along one.
 * Formal Semiring Power Series
+#+ATTR_BEAMER: :overlay <+->
 - Given a closed semiring \(S\), the set of formal power series \(S[ [x]]\) form a semiring.
 - The closure of \(a + px\) is \(s^\ast\), where \(s^\ast = a^\ast(1 + p s^\ast)\).
 * Semiring Power Series in Haskell
@@ -145,9 +194,9 @@ Haskell is programming language that is...
       --    r =  a*            (1   +  p r)
   #+end_src
 * Solving Linear Recurrence Relations
-- Formal power series semirings solve every linear recurrence relation.
-- The Fibonacci sequence \(F\) expressed as a power series satsisfies \(F = 1 + (x + x^2) F\).
-- Because \(F\) is a fixed point, its solution is expressed as a closure: \(F = (x + x^2)^\ast\).
+#+ATTR_BEAMER: :overlay <+->
+- The Fibonacci sequence \(F\) expressed as a power series satisfies \(F = 1 + (x + x^2) F\).
+- We find \(F\) using the closure operator: \(F = (x + x^2)^\ast\).
 * In Haskell
 #+begin_src haskell
   --                  0 + x + x^2
@@ -157,11 +206,11 @@ Haskell is programming language that is...
 #+end_src
 * Addendum
 Semirings are applied in other ways not listed here:
-- Reachability in a graph
-- DFA to regular expression conversion
-- Dataflow analysis (finding unused variables in code)
-- Most dynamic programming problems (think 0/1 knapsack, edit distance between strings, etc…)
-- Generalising Gaussian eliminitation.
+- Reachability in a graph.
+- DFA to regular expression conversion.
+- Dataflow analysis (finding unused variables in code).
+- Most dynamic programming problems (think 0/1 knapsack, edit distance between strings, etc…).
+- Generalising Gaussian elimination.
 * Mathematics and Haskell
 Mathematics inspires Haskell:
 - Classic algebraic structures have typeclasses in Haskell.
@@ -169,4 +218,4 @@ Mathematics inspires Haskell:
 - Category Theory too!
   - e.g. Functors, Monads, Morphisms.
 - Laziness and purity lets us think of equality in the usual sense.
-  - There are programs that can auto-refactor based on properties from Mathematics. 
+  - There are programs that can auto-refactor Haskell code based on properties from Mathematics. 
